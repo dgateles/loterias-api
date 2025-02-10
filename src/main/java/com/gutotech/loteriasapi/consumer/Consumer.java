@@ -26,9 +26,10 @@ import com.gutotech.loteriasapi.util.SSLHelper;
 @Component
 public class Consumer {
 
-    public Document fetchDocument(String url) throws InterruptedException {
+    private Document fetchDocument(String url) throws Exception {
+        // Implemente aqui a lógica de retry/backoff
         int maxAttempts = 5;
-        long delayMs = 5000; // 5 segundos
+        long delayMs = 5000;
         int attempts = 0;
         while (attempts < maxAttempts) {
             try {
@@ -44,11 +45,9 @@ public class Consumer {
                 } else {
                     throw e;
                 }
-            } catch (Exception e) {
-                throw new RuntimeException("Erro ao buscar a URL: " + url, e);
             }
         }
-        throw new RuntimeException("Número máximo de tentativas excedido para a URL: " + url);
+        throw new Exception("Número máximo de tentativas excedido para a URL: " + url);
     }
 
     public Resultado getResultado(String loteria, int concurso) throws Exception {
