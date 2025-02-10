@@ -26,6 +26,31 @@ import com.gutotech.loteriasapi.util.SSLHelper;
 @Component
 public class Consumer {
 
+    public Document fetchDocument(String url) throws InterruptedException {
+        int maxAttempts = 5;
+        long delayMs = 5000; // 5 segundos
+        int attempts = 0;
+        while (attempts < maxAttempts) {
+            try {
+                return SSLHelper.getConnection(url)
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
+                        .timeout(15000)
+                        .get();
+            } catch (org.jsoup.HttpStatusException e) {
+                if (e.getStatusCode() == 429) {
+                    System.err.println("Erro 429 recebido ao acessar " + url + ". Aguardando " + delayMs + "ms antes de tentar novamente.");
+                    Thread.sleep(delayMs);
+                    attempts++;
+                } else {
+                    throw e;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Erro ao buscar a URL: " + url, e);
+            }
+        }
+        throw new RuntimeException("Número máximo de tentativas excedido para a URL: " + url);
+    }
+
     public Resultado getResultado(String loteria, int concurso) throws Exception {
         return getResultado(loteria, String.valueOf(concurso));
     }
@@ -41,7 +66,8 @@ public class Consumer {
             concurso = "";
         }
 
-        Document doc = SSLHelper.getConnection(baseUrl + loteria + "/" + concurso).get();
+        //Document doc = SSLHelper.getConnection(baseUrl + loteria + "/" + concurso).get();
+        Document doc = fetchDocument(baseUrl + loteria + "/" + concurso);
         JSONObject jsonObject = new JSONObject(doc.select("body").text());
 
         ResultadoId resultadoId = new ResultadoId(loteria, jsonObject.getInt("numero"));
